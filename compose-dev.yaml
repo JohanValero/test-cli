@@ -5,9 +5,6 @@ services:
     - infinity
     image: docker/dev-environments-go:stable-1
     init: true
-    build:
-      context: .
-      dockerfile: Dockerfile-dev
     volumes:
     - type: bind
       source: /var/run/docker.sock
