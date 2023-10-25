@@ -26,7 +26,6 @@ int main(int argc, char * argv []) {
 void process_file(char * i_file_path){
     FILE * file;
     char buffer[BUFFER_SIZE];
-    char line  [BUFFER_SIZE];
 
     printf("Text file passed: %s\n", i_file_path);
 
@@ -38,13 +37,13 @@ void process_file(char * i_file_path){
 
     printf("Starting to read lines:\n");
     while(fgets(buffer, sizeof(buffer), file) != NULL) {
+        
+        void * shared_lib_handler = NULL;
         size_t len = strlen(buffer);
 
         if (len > 0 && buffer[len-1] == JUMP_OF_LINE) {
             buffer[len-1] = END_OF_STRING;
         }
-
-        strcpy(line, buffer);
         strtok(buffer, " ");
 
         if(buffer == NULL){
@@ -52,13 +51,23 @@ void process_file(char * i_file_path){
         }
 
         if(strcmp(buffer, COMAND_USE) == 0){
-            printf("COMAND USE  > ");
+            char * lib_path = strtok(NULL, " ");
+            printf("COMAND USE  > %10s", lib_path);
+            
+            if(shared_lib_handler) {
+                printf("SHARED_LIB_HANDLER NOT NULL");
+                dlclose(shared_lib_handler);
+            }
+
+            shared_lib_handler = dlopen(lib_path, RTLD_LAZY);
+
+            if(!shared_lib_handler) {
+                printf("\nError loading library: %s\n", dlerror());
+            }
         } else if(strcmp(buffer, COMAND_CALL) == 0){
             printf("COMAND CALL > ");
         }
-        printf("Line: %20s > ", line);
-
-        printf("Token: %s\n", buffer);
+        printf("\n");
     }
 
     fclose(file);
