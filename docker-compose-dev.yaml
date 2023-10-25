@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  c-development:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    volumes:
+      - .:/workspace
