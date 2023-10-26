@@ -342,7 +342,7 @@ void handle_line(char * buffer, char * so_path, void ** so_lib){
         // Check for file opening error.
         FILE * temp_file = fopen(so_path, "r");
         if(not temp_file){
-            printf("--> The library [%s] was not found.\n", so_path);
+            printf("--> The .so file [%s] was not found.\n", so_path);
             return;
         }
         fclose(temp_file);
