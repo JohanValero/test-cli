@@ -4,36 +4,125 @@
 #include <stdlib.h>     // Standart library with program constant.
 
 // Constants basic in the compilation.
-#define END_OF_STRING '\0'
-#define JUMP_OF_LINE  '\n'
-#define BUFFER_SIZE   1024
+#define END_OF_STRING    '\0'
+#define JUMP_OF_LINE     '\n'
+#define END_OF_STATEMENT ';'
+#define COMMENT_CHAR     '#'
+#define JUMP_OF_COMMAND  '\\'
+#define BUFFER_SIZE      1024
 
+// Comands definitions for use in the code.
 #define COMAND_USE     "use"
 #define COMAND_CALL    "call"
 #define COMAND_COMMENT "#"
 
+// Constants for identify commands.
 #define CONST_USE    1
 #define CONST_CALL   2
+
+// Basic definitions for logic operations.
+#define and &&
+#define or  ||
+#define not !
+
+// Boolean type Boolean definition and true/false value. 
+#define bool  unsigned char
+#define true  1
+#define false 0
 
 // Methods prototype.
 void process_file(char *);
 void str_replace(char *, char, char);
 void handle_line(char *, char *, void **);
+bool get_command(char *, FILE *);
+void get_command_cli(char *);
+void terminal_loop();
 
 // Main method.
 int main(int argc, char * argv []) {
+    printf("** Program C comand line interface started.\n");
+
+    // If there's not arguments then use the terminal mode.
     if(argc == 1){
-        printf("Actived intrepeter mode.\n");
+        terminal_loop();
     }
 
+    // If exists one argument, then process the file.
     if(argc == 2){
         process_file(argv[1]);
     }
 
+    printf("** Program C comand line interface finished.\n");
     return EXIT_SUCCESS;
 }
 
 // Methods.
+
+/**
+ * Method name: str_replace
+ * Method for executing a terminal instance.
+ * This method initiates an interactive mode where the user can enter commands.
+ * The loop continues until the user types 'quit'.
+ * It utilizes other helper methods like get_command_cli and handle_line to process the user input.
+ * 
+ * Parameters:
+ *  - No parameters.
+*/
+void terminal_loop(){
+    printf(">>> Actived intrepeter mode.\n");
+    printf(">>> for exit of terminal type 'quit'.\n");
+    
+    char buffer[BUFFER_SIZE];   // Buffer to hold the user input.
+    char so_path[BUFFER_SIZE];  // Buffer to hold the shared object path.
+    bool flag = true;           // Control flag for the do-while loop.
+    void * so_lib = NULL;       // Pointer to hold the shared object library handle.
+
+    do {
+        // Get user input.
+        get_command_cli(buffer);
+
+        // Check if the user wants to quit.
+        if(strcmp(buffer, "quit") == 0){
+            break;
+        }
+
+        // Get the length of the user input.
+        size_t len = strlen(buffer);
+
+        // Check if the input is empty and the flag is true for break the continue to the next command.
+        if(len == 0 and flag){
+            continue;
+        }
+
+        // Handle the user input.
+        handle_line(buffer, so_path, &so_lib);
+    } while(flag);
+}
+
+// Method for get an command in the CLI.
+void get_command_cli(char * buffer){
+    printf(">>> ");
+    unsigned short index = 0;
+    bool flag = true;
+    char inside_buffer[BUFFER_SIZE];
+    char * ptr = buffer;
+
+    do {
+        fgets(inside_buffer, BUFFER_SIZE, stdin);
+        str_replace(inside_buffer, COMMENT_CHAR, END_OF_STRING);
+        str_replace(inside_buffer, JUMP_OF_LINE, END_OF_STRING);
+
+        index = strlen(inside_buffer);
+        if(index > 0 and inside_buffer[index - 1] == JUMP_OF_COMMAND){
+            strcpy(ptr, inside_buffer);
+            ptr = buffer + index - 1;
+            printf("... ");
+            continue;
+        }
+        strcpy(ptr, inside_buffer);
+        flag = false;
+    } while(flag);
+}
 
 /**
  * str_replace
@@ -75,30 +164,87 @@ void process_file(char * i_file_path){
     char so_path[BUFFER_SIZE];
     void * so_lib = NULL;
     FILE * file;
+    bool flag = false;
 
     file = fopen(i_file_path, "r");
-    if (!file) {
+    if (not file) {
         perror("Failed to open script file.\n");
         exit(EXIT_FAILURE);
     }
 
-    while(fgets(buffer, sizeof(buffer), file) != NULL) {
+    do {
+        flag = get_command(buffer, file);
         size_t len = strlen(buffer);
-        if(len == 0) continue;
-        buffer[len-1] = END_OF_STRING;
+        printf("%s\n", buffer);
 
-        str_replace(buffer, '#', END_OF_STRING);
-        len = strlen(buffer);
-
-        if(len == 0){
+        if(len == 0 and flag){
             continue;
         }
-        printf("> %s\n", buffer);
 
         handle_line(buffer, so_path, &so_lib);
-    }
+    } while(flag);
+
     printf("File process finished.\n");
+    if(so_lib) {
+        dlclose(so_lib);
+    }
     fclose(file);
+}
+
+bool get_command(char * buffer, FILE * file) {
+    size_t index = 0;
+    char ch;
+    bool isInAComentary = false;
+    bool isInJumpOfLine = false;
+    
+    while((ch = fgetc(file)) != EOF){
+        if(isInJumpOfLine and (ch != JUMP_OF_LINE)){
+            buffer[index] = JUMP_OF_COMMAND;
+            buffer[index + 1] = END_OF_STRING;
+            return true;
+
+            printf(" * SyntaxError - unterminated string literal. Command: %s\n", buffer);
+            index = 0;
+            isInJumpOfLine = false;
+            isInAComentary = false;
+        }
+
+        if(ch == JUMP_OF_LINE){
+            buffer[index] = END_OF_STRING;
+            if(not isInJumpOfLine and index > 0){
+                return true;
+                printf(" 1 %s\n", buffer);
+            }
+
+            if(not isInJumpOfLine){
+                index = 0;
+            }
+            isInAComentary = false;
+            isInJumpOfLine = false;
+        } else if(ch == END_OF_STATEMENT and not isInAComentary){
+            buffer[index] = END_OF_STRING;
+            
+            if(index > 0){
+                return true;
+                printf(" 2 %s\n", buffer);
+            }
+
+            index = 0;
+            isInAComentary = false;
+            isInJumpOfLine = false;
+        } else if(ch == COMMENT_CHAR and not isInAComentary) {
+            buffer[index] = END_OF_STRING;
+            isInAComentary = true;
+        } else if(ch == JUMP_OF_COMMAND and not isInAComentary){
+            isInJumpOfLine = true;
+        } else if(not isInAComentary){
+            buffer[index] = ch;
+            index++;
+        }
+    }
+    buffer[index] = END_OF_STRING;
+    return false;
+    printf("Process finished with character [%c] and size [%d] and string [%s].\n", ch, index, buffer);
 }
 
 void handle_line(char * buffer, char * so_path, void ** so_lib){
@@ -107,7 +253,7 @@ void handle_line(char * buffer, char * so_path, void ** so_lib){
 
     ptr_split = strtok(buffer, " ");
     if(ptr_split == NULL){
-        printf("- Syntax error. Line ignored.\n");
+        printf("--> Syntax error. Comand ignored.\n");
         return;
     }
 
@@ -116,14 +262,14 @@ void handle_line(char * buffer, char * so_path, void ** so_lib){
     } else if(strcmp(ptr_split, COMAND_CALL) == 0){
         comand_const = CONST_CALL;
     } else {
-        printf("- Syntax error. Line ignored.\n");
+        printf("--> Syntax error. Comand ignored.\n");
         return;
     }
 
-    ptr_split = strtok(NULL, "");
+    ptr_split = strtok(NULL, " ");
 
     if(ptr_split == NULL){
-        printf("- Syntax error. Line ignored.\n");
+        printf("--> Syntax error. Comand ignored.\n");
         return;
     }
 
@@ -132,8 +278,8 @@ void handle_line(char * buffer, char * so_path, void ** so_lib){
         *so_lib = NULL;
 
         FILE * temp_file = fopen(so_path, "r");
-        if(!temp_file){
-            printf("- The file [%s] was not found.\n", so_path);
+        if(not temp_file){
+            printf("--> The library [%s] was not found.\n", so_path);
             return;
         }
         fclose(temp_file);
@@ -142,22 +288,22 @@ void handle_line(char * buffer, char * so_path, void ** so_lib){
             dlclose(*so_lib);
         }
         *so_lib = dlopen(so_path, RTLD_LAZY);
-        if(!*so_lib) {
-            printf("- The file [%s] is not a shared library.\n", so_path);
+        if(not *so_lib) {
+            printf("--> The file [%s] is not a shared library.\n", so_path);
         }
 
         return;
     }
     
     if(comand_const == CONST_CALL){
-        if(!*so_lib) {
-            printf("- The library was not previously loaded.\n");
+        if(not *so_lib) {
+            printf("--> The library was not previously loaded.\n");
             return;
         }
         void (*test_func)() = dlsym(*so_lib, ptr_split);
 
         if(test_func == NULL) {
-            printf("- The function [%s] was not found.\n", ptr_split);
+            printf("--> The function [%s] was not found.\n", ptr_split);
             return;
         }
         test_func();
