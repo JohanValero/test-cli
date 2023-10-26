@@ -27,10 +27,84 @@ call <func_name>
 ```
 
 ## Building and Running
-
 The provided Makefile facilitates building the main program, generating shared object files, and running tests.
 
 ### Compile the Main Program:
 ```bash
 make main
+```
+
+### Generate Shared Object File:
+```bash
+make generate_so
+```
+
+### Run File Tests:
+```bash
+make run_file_tests
+```
+
+### Run Interactive Terminal:
+```bash
+make run_terminal
+```
+
+## Example Usage
+
+### Script File:
+```plaintext
+# Load the library
+use /path/to/library.so
+
+# Call a function
+call function_name
+
+# Using multiple commands in line.
+use /path/to/library.so;call function_name
+```
+
+### Interactive Mode:
+```bash
+gcc src/main.c -o bin/sotest.bin -ldl
+gcc -fPIC -shared src/lib1.c -o bin/test.so
+bin/sotest.bin
+>>> use /path/to/library.so
+>>> call function_name
+>>> call \
+... function_name
+```
+
+## Error Handling
+
+Syntax and command execution errors are handled gracefully with interpreter warnings and termination respectively.
+
+## Docker instance
+
+### Setting Up Docker Development Environment
+Docker is a tool designed to make it easier to create, deploy, and run applications by using containers. Containers allow a developer to package up an application with all parts of it including libraries and other dependencies and ship it all out as one package.
+
+If it's running the software in others SO diferent to UNIX, Docker allow run and test the code in a lite GNU/Linux SO.
+
+### Prerequisites:
+- Docker installed on your machine. [Get Docker](https://docs.docker.com/get-docker/)
+
+### Set the Dev enviroment:
+
+* Open Docker dekstop.
+* Go to the tab "Dev enviroments (beta)".
+* Press the button "create +".
+* Set in Git "Existing git repo" with value "https://github.com/JohanValero/test-cli.git" and IDE "Visual Studio Code" or your favorite IDE.
+* Press button "continue".
+* Wait the image build.
+* When the image is build then press the button "continue".
+* And press in "OPEN IN VSCODE" or your prefered IDE.
+* In the IDE open the terminal in the Docker container instance.
+* In the terminal type the commands:
+
+```bash
+make run_file_tests
+```
+
+```bash
+make run_terminal
 ```
