@@ -109,6 +109,7 @@ void handle_line(char * buffer, char * so_path, void ** so_lib){
     ptr_split = strtok(buffer, " ");
     if(ptr_split == NULL){
         printf("- Syntax error. Line ignored.\n");
+        return;
     }
 
     if(strcmp(ptr_split, COMAND_USE) == 0){
