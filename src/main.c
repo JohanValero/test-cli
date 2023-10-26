@@ -1,16 +1,21 @@
 #include <dlfcn.h>
-#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
 #define END_OF_STRING '\0'
 #define JUMP_OF_LINE  '\n'
-#define COMAND_USE    "use"
-#define COMAND_CALL   "call"
 #define BUFFER_SIZE   1024
 
-void process_file(char * i_file_path);
+#define COMAND_USE     "use"
+#define COMAND_CALL    "call"
+#define COMAND_COMMENT "#"
+
+#define CONST_USE    1
+#define CONST_CALL   2
+
+void process_file(char *);
+void str_replace(char *, char, char);
 
 int main(int argc, char * argv []) {
     if(argc == 1){
@@ -20,55 +25,105 @@ int main(int argc, char * argv []) {
     if(argc == 2){
         process_file(argv[1]);
     }
-    return 0;
+
+    return EXIT_SUCCESS;
+}
+
+void str_replace(char * i_string, char i_source, char i_destiny) {
+    short i = 0;
+    while(i_string[i] != END_OF_STRING){
+        if(i_string[i] == i_source){
+            i_string[i] = i_destiny;
+            if(i_destiny == END_OF_STRING){
+                break;
+            }
+        }
+        i++;
+    }
 }
 
 void process_file(char * i_file_path){
-    FILE * file;
     char buffer[BUFFER_SIZE];
+    char so_path[BUFFER_SIZE];
+    void * so_lib = NULL;
+    char * ptr_split;
+    FILE * file;
 
-    printf("Text file passed: %s\n", i_file_path);
+    short comand_const = 0;
 
+    printf("File to read: %s\n", i_file_path);
     file = fopen(i_file_path, "r");
     if (!file) {
         perror("Failed to open script file.\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
-    printf("Starting to read lines:\n");
     while(fgets(buffer, sizeof(buffer), file) != NULL) {
-        
-        void * shared_lib_handler = NULL;
         size_t len = strlen(buffer);
+        if(len == 0) continue;
+        buffer[len-1] = END_OF_STRING;
 
-        if (len > 0 && buffer[len-1] == JUMP_OF_LINE) {
-            buffer[len-1] = END_OF_STRING;
+        str_replace(buffer, '#', END_OF_STRING);
+        len = strlen(buffer);
+
+        if(len == 0){
+            continue;
         }
-        strtok(buffer, " ");
+        printf("> %s\n", buffer);
 
-        if(buffer == NULL){
-            printf("Comand empty.");
+        ptr_split = strtok(buffer, " ");
+        if(ptr_split == NULL){
+            printf("- Syntax error. Line ignored.\n");
         }
 
-        if(strcmp(buffer, COMAND_USE) == 0){
-            char * lib_path = strtok(NULL, " ");
-            printf("COMAND USE  > %10s", lib_path);
-            
-            if(shared_lib_handler) {
-                printf("SHARED_LIB_HANDLER NOT NULL");
-                dlclose(shared_lib_handler);
+        if(strcmp(ptr_split, COMAND_USE) == 0){
+            comand_const = CONST_USE;
+        } else if(strcmp(ptr_split, COMAND_CALL) == 0){
+            comand_const = CONST_CALL;
+        } else {
+            printf("- Syntax error. Line ignored.\n");
+            continue;
+        }
+
+        ptr_split = strtok(NULL, "");
+
+        if(ptr_split == NULL){
+            printf("- Syntax error. Line ignored.\n");
+            continue;
+        }
+
+        if(comand_const == CONST_USE){
+            strcpy(so_path, ptr_split);
+            so_lib = NULL;
+
+            FILE * temp_file = fopen(so_path, "r");
+            if(!temp_file){
+                printf("--> The file [%s] was not found.\n", so_path);
+                continue;
             }
+            fclose(temp_file);
 
-            shared_lib_handler = dlopen(lib_path, RTLD_LAZY);
-
-            if(!shared_lib_handler) {
-                printf("\nError loading library: %s\n", dlerror());
+            if(so_lib) {
+                dlclose(so_lib);
             }
-        } else if(strcmp(buffer, COMAND_CALL) == 0){
-            printf("COMAND CALL > ");
+            so_lib = dlopen(so_path, RTLD_LAZY);
+            if(!so_lib) {
+                printf("--> The file [%s] is not a shared library.\n", so_path);
+            }
+        } else if(comand_const == CONST_CALL){
+            if(!so_lib) {
+                printf("--> The library was not previously loaded.\n");
+                continue;
+            }
+            void (*test_func)() = dlsym(so_lib, ptr_split);
+
+            if(test_func == NULL) {
+                printf("--> The function [%s] was not found.\n", ptr_split);
+                continue;
+            }
+            test_func();
         }
-        printf("\n");
     }
-
+    printf("File process finished.\n");
     fclose(file);
 }
