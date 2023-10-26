@@ -25,3 +25,12 @@ use <so_name>
 call <func_name>
 `<func_name>` - the name of the function.
 ```
+
+## Building and Running
+
+The provided Makefile facilitates building the main program, generating shared object files, and running tests.
+
+### Compile the Main Program:
+```bash
+make main
+```
