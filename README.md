@@ -17,6 +17,6 @@ A console application developed in C language for GNU/Linux (x86 processor archi
 ### Loading the Library:
 ```plaintext
 use <so_name>
-<so_name> - the path to the .so file.
+* <so_name> - the path to the .so file.
 ```
 
