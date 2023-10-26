@@ -18,6 +18,7 @@
 // Methods prototype.
 void process_file(char *);
 void str_replace(char *, char, char);
+void handle_line(char *, char *, void **);
 
 // Main method.
 int main(int argc, char * argv []) {
@@ -73,10 +74,8 @@ void process_file(char * i_file_path){
     char buffer[BUFFER_SIZE];
     char so_path[BUFFER_SIZE];
     void * so_lib = NULL;
-    char * ptr_split;
     FILE * file;
 
-    short comand_const = 0;
 
     printf("File to read: %s\n", i_file_path);
     file = fopen(i_file_path, "r");
@@ -98,59 +97,66 @@ void process_file(char * i_file_path){
         }
         printf("> %s\n", buffer);
 
-        ptr_split = strtok(buffer, " ");
-        if(ptr_split == NULL){
-            printf("- Syntax error. Line ignored.\n");
-        }
-
-        if(strcmp(ptr_split, COMAND_USE) == 0){
-            comand_const = CONST_USE;
-        } else if(strcmp(ptr_split, COMAND_CALL) == 0){
-            comand_const = CONST_CALL;
-        } else {
-            printf("- Syntax error. Line ignored.\n");
-            continue;
-        }
-
-        ptr_split = strtok(NULL, "");
-
-        if(ptr_split == NULL){
-            printf("- Syntax error. Line ignored.\n");
-            continue;
-        }
-
-        if(comand_const == CONST_USE){
-            strcpy(so_path, ptr_split);
-            so_lib = NULL;
-
-            FILE * temp_file = fopen(so_path, "r");
-            if(!temp_file){
-                printf("--> The file [%s] was not found.\n", so_path);
-                continue;
-            }
-            fclose(temp_file);
-
-            if(so_lib) {
-                dlclose(so_lib);
-            }
-            so_lib = dlopen(so_path, RTLD_LAZY);
-            if(!so_lib) {
-                printf("--> The file [%s] is not a shared library.\n", so_path);
-            }
-        } else if(comand_const == CONST_CALL){
-            if(!so_lib) {
-                printf("--> The library was not previously loaded.\n");
-                continue;
-            }
-            void (*test_func)() = dlsym(so_lib, ptr_split);
-
-            if(test_func == NULL) {
-                printf("--> The function [%s] was not found.\n", ptr_split);
-                continue;
-            }
-            test_func();
-        }
+        handle_line(buffer, so_path, &so_lib);
     }
     printf("File process finished.\n");
     fclose(file);
+}
+
+void handle_line(char * buffer, char * so_path, void ** so_lib){
+    char * ptr_split;
+    short comand_const = 0;
+
+    ptr_split = strtok(buffer, " ");
+    if(ptr_split == NULL){
+        printf("- Syntax error. Line ignored.\n");
+    }
+
+    if(strcmp(ptr_split, COMAND_USE) == 0){
+        comand_const = CONST_USE;
+    } else if(strcmp(ptr_split, COMAND_CALL) == 0){
+        comand_const = CONST_CALL;
+    } else {
+        printf("- Syntax error. Line ignored.\n");
+        return;
+    }
+
+    ptr_split = strtok(NULL, "");
+
+    if(ptr_split == NULL){
+        printf("- Syntax error. Line ignored.\n");
+        return;
+    }
+
+    if(comand_const == CONST_USE){
+        strcpy(so_path, ptr_split);
+        *so_lib = NULL;
+
+        FILE * temp_file = fopen(so_path, "r");
+        if(!temp_file){
+            printf("- The file [%s] was not found.\n", so_path);
+            return;
+        }
+        fclose(temp_file);
+
+        if(*so_lib) {
+            dlclose(*so_lib);
+        }
+        *so_lib = dlopen(so_path, RTLD_LAZY);
+        if(!*so_lib) {
+            printf("- The file [%s] is not a shared library.\n", so_path);
+        }
+    } else if(comand_const == CONST_CALL){
+        if(!*so_lib) {
+            printf("- The library was not previously loaded.\n");
+            return;
+        }
+        void (*test_func)() = dlsym(*so_lib, ptr_split);
+
+        if(test_func == NULL) {
+            printf("- The function [%s] was not found.\n", ptr_split);
+            return;
+        }
+        test_func();
+    }
 }
