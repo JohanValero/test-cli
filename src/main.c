@@ -1,8 +1,9 @@
-#include <dlfcn.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <dlfcn.h>      // Library for load shared library (.so files).
+#include <stdio.h>      // Library for printf and other common methods.
+#include <string.h>     // Library for string processing.
+#include <stdlib.h>     // Standart library with program constant.
 
+// Constants basic in the compilation.
 #define END_OF_STRING '\0'
 #define JUMP_OF_LINE  '\n'
 #define BUFFER_SIZE   1024
@@ -14,9 +15,11 @@
 #define CONST_USE    1
 #define CONST_CALL   2
 
+// Methods prototype.
 void process_file(char *);
 void str_replace(char *, char, char);
 
+// Main method.
 int main(int argc, char * argv []) {
     if(argc == 1){
         printf("Actived intrepeter mode.\n");
@@ -29,6 +32,17 @@ int main(int argc, char * argv []) {
     return EXIT_SUCCESS;
 }
 
+// Methods.
+
+/**
+ * str_replace
+ * Purpose: Replaces all occurrences of i_source in i_string with i_destiny.
+ * 
+ * Parameters:
+ *  - i_string: The string to modify.
+ *  - i_source: The character to be replaced.
+ *  - i_destiny: The replacement character.
+*/
 void str_replace(char * i_string, char i_source, char i_destiny) {
     short i = 0;
     while(i_string[i] != END_OF_STRING){
@@ -42,6 +56,19 @@ void str_replace(char * i_string, char i_source, char i_destiny) {
     }
 }
 
+/**
+ * process_file
+ * Purpose: Reads a script file and executes the commands within.
+ * 
+ * Parameters:
+ *  - i_file_path: Path to the script file to be processed.
+ * Description:
+ *      Reads each line from the script file.
+ *      Interprets the line based on the command ("use" or "call").
+ *      For the "use" command, attempts to load a shared library.
+ *      For the "call" command, attempts to call a function from the loaded library.
+ *      Handles and reports errors like file not found, function not found, or syntax errors.
+*/
 void process_file(char * i_file_path){
     char buffer[BUFFER_SIZE];
     char so_path[BUFFER_SIZE];
