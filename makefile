@@ -11,3 +11,8 @@ run_file_tests: main generate_so
 
 run_terminal: main generate_so
 	bin/${PROGRAM_NAME}
+
+git_save:
+	git add .
+	git commit -m "Auto save"
+	git push origin main
