@@ -76,7 +76,6 @@ void process_file(char * i_file_path){
     void * so_lib = NULL;
     FILE * file;
 
-
     printf("File to read: %s\n", i_file_path);
     file = fopen(i_file_path, "r");
     if (!file) {
@@ -146,7 +145,11 @@ void handle_line(char * buffer, char * so_path, void ** so_lib){
         if(!*so_lib) {
             printf("- The file [%s] is not a shared library.\n", so_path);
         }
-    } else if(comand_const == CONST_CALL){
+
+        return;
+    }
+    
+    if(comand_const == CONST_CALL){
         if(!*so_lib) {
             printf("- The library was not previously loaded.\n");
             return;
