@@ -76,7 +76,6 @@ void process_file(char * i_file_path){
     void * so_lib = NULL;
     FILE * file;
 
-    printf("File to read: %s\n", i_file_path);
     file = fopen(i_file_path, "r");
     if (!file) {
         perror("Failed to open script file.\n");
